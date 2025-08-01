@@ -1,0 +1,199 @@
+
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>스마트스토어 주문 관리</title>
+    <!-- Bootstrap CSS CDN -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+    <style>
+        body {
+            display: flex;
+            min-height: 100vh;
+            background-color: #f4f7f6;
+        }
+        #sidebar {
+            width: 280px;
+            background-color: #343a40; /* Dark sidebar */
+            color: #f8f9fa;
+            padding: 20px;
+            box-shadow: 2px 0 5px rgba(0,0,0,0.1);
+            flex-shrink: 0;
+        }
+        #sidebar h2 {
+            color: #66b3ff;
+            margin-bottom: 30px;
+            text-align: center;
+        }
+        .filter-container {
+            margin-bottom: 20px;
+        }
+        .filter-container label {
+            color: #adb5bd;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        .filter-container select {
+            background-color: #495057;
+            color: #f8f9fa;
+            border: 1px solid #6c757d;
+        }
+        .nav-pills .nav-link {
+            color: #adb5bd;
+            margin-bottom: 5px;
+            transition: background-color 0.2s, color 0.2s;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .nav-pills .nav-link.active,
+        .nav-pills .nav-link:hover {
+            background-color: #007bff;
+            color: #fff;
+        }
+        .order-count {
+            background-color: #6c757d;
+            color: #fff;
+            font-size: 0.75rem;
+            font-weight: bold;
+            padding: 3px 8px;
+            border-radius: 10px;
+            min-width: 20px;
+            text-align: center;
+        }
+        .nav-pills .nav-link.active .order-count {
+            background-color: #fff;
+            color: #007bff;
+        }
+        #content {
+            flex-grow: 1;
+            padding: 30px;
+            overflow-y: auto;
+        }
+        .order-item {
+            background-color: #fff;
+            border: 1px solid #e0e0e0;
+            border-left: 5px solid #007bff;
+            padding: 20px;
+            margin-bottom: 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.05);
+        }
+        .order-item p {
+            margin-bottom: 5px;
+        }
+        .order-item strong {
+            color: #343a40;
+            min-width: 100px;
+            display: inline-block;
+        }
+        .sub-product-list {
+            margin-top: 15px;
+            padding-top: 10px;
+            border-top: 1px dashed #e9ecef;
+        }
+        .sub-product-list strong {
+            color: #dc3545;
+        }
+        .sub-product-list ul {
+            list-style-type: none;
+            padding-left: 0;
+            margin-top: 10px;
+        }
+        .sub-product-list li {
+            background-color: #f8f9fa;
+            padding: 8px 12px;
+            border-radius: 5px;
+            margin-bottom: 5px;
+            border: 1px solid #e9ecef;
+        }
+        .error-message {
+            color: #dc3545;
+            font-weight: bold;
+        }
+        .no-orders-message {
+            color: #6c757d;
+        }
+    </style>
+</head>
+<body>
+    <div id="sidebar">
+        <h2>주문 관리</h2>
+        <div class="filter-container mb-4">
+            <form method="get" action="{{ url_for('orders') }}">
+                <label for="delivery_date" class="form-label">배송희망일</label>
+                <select name="delivery_date" id="delivery_date" class="form-select" onchange="this.form.submit()">
+                    <option value="all" {% if not selected_date or selected_date == 'all' %}selected{% endif %}>전체 보기</option>
+                    {% for date in delivery_dates %}
+                        <option value="{{ date }}" {% if date == selected_date %}selected{% endif %}>{{ date }}</option>
+                    {% endfor %}
+                </select>
+            </form>
+        </div>
+        <div id="tab-container">
+            <div class="nav flex-column nav-pills" id="v-pills-tab" role="tablist" aria-orientation="vertical">
+                {% for product_name, orders in orders_by_product.items() %}
+                    <a class="nav-link" id="v-pills-{{ product_name|replace(" ", "-") }}-tab" data-bs-toggle="pill" href="#v-pills-{{ product_name|replace(" ", "-") }}" role="tab" aria-controls="v-pills-{{ product_name|replace(" ", "-") }}" aria-selected="false">
+                        <span>{{ product_name }}</span>
+                        <span class="order-count">{{ orders|length }}</span>
+                    </a>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+    <div id="content">
+        <h1 class="mb-4">주문 내역</h1>
+        {% if error %}
+            <p class="error-message">Error: {{ error }}</p>
+        {% elif not orders_by_product %}
+            <p class="no-orders-message">선택하신 날짜에 해당하는 주문이 없습니다.</p>
+        {% endif %}
+
+        <div class="tab-content" id="v-pills-tabContent">
+            {% for product_name, orders in orders_by_product.items() %}
+                <div class="tab-pane fade" id="v-pills-{{ product_name|replace(" ", "-") }}" role="tabpanel" aria-labelledby="v-pills-{{ product_name|replace(" ", "-") }}-tab">
+                    {% for order_id, order_details in orders.items() %}
+                        {% if order_details.main_info %}
+                            <div class="order-item">
+                                <p><strong>주문번호:</strong> {{ order_id }}</p>
+                                <p><strong>배송희망일:</strong> {{ order_details.main_info['배송희망일'] }}</p>
+                                <p><strong>구매자:</strong> {{ order_details.main_info['구매자명'] }}</p>
+                                <p><strong>수신자:</strong> {{ order_details.main_info['수취인명'] }}</p>
+                                <p><strong>연락처1:</strong> {{ order_details.main_info['수취인연락처1'] }}</p>
+                                <p><strong>연락처2:</strong> {{ order_details.main_info['수취인연락처2'] }}</p>
+                                <p><strong>배송지:</strong> {{ order_details.main_info['통합배송지'] }}</p>
+                                <p><strong>배송메세지:</strong> {{ order_details.main_info['배송메세지'] }}</p>
+                                
+                                {% if order_details.sub_products %}
+                                    <div class="sub-product-list">
+                                        <strong>추가구성상품:</strong>
+                                        <ul>
+                                            {% for sub in order_details.sub_products %}
+                                                <li>{{ sub['상품명'] }}</li>
+                                            {% endfor %}
+                                        </ul>
+                                    </div>
+                                {% endif %}
+                            </div>
+                        {% endif %}
+                    {% endfor %}
+                </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- Bootstrap Bundle with Popper -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            var firstTabEl = document.querySelector('#v-pills-tab .nav-link');
+            if (firstTabEl) {
+                var firstTab = new bootstrap.Tab(firstTabEl);
+                firstTab.show();
+            }
+        });
+    </script>
+</body>
+</html>
