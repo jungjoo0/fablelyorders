@@ -1,3 +1,5 @@
+import os
+import json
 from flask import Flask, render_template, request
 import gspread
 from oauth2client.service_account import ServiceAccountCredentials
@@ -8,7 +10,15 @@ app = Flask(__name__)
 def get_sheet_data():
     try:
         scope = ['https://spreadsheets.google.com/feeds', 'https://www.googleapis.com/auth/drive']
-        creds = ServiceAccountCredentials.from_json_keyfile_name('burnished-net-467701-k0-d58bdc5ceaf8.json', scope)
+
+        # API 키를 환경 변수에서 읽어옴
+        creds_json_str = os.environ.get('GOOGLE_APPLICATION_CREDENTIALS_JSON')
+        if not creds_json_str:
+            raise ValueError("GOOGLE_APPLICATION_CREDENTIALS_JSON environment variable not set.")
+
+        creds_info = json.loads(creds_json_str)
+        creds = ServiceAccountCredentials.from_json_keyfile_dict(creds_info, scope)
+
         client = gspread.authorize(creds)
         sheet = client.open("스마트스토어").worksheet("발주발송관리")
         
