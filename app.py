@@ -93,7 +93,8 @@ def orders():
     # Filter data based on selected date
     selected_date = request.args.get('delivery_date')
     if selected_date and selected_date != 'all':
-        data = [row for row in data if row.get('배송희망일') == selected_date]
+        main_order_ids = set(row['주문번호'] for row in data if row.get('배송희망일') == selected_date and row.get('상품종류') == '조합형옵션상품')
+        data = [row for row in data if row.get('주문번호') in main_order_ids]
 
     # 1. Group by product for tabs
     tabs = defaultdict(list)
