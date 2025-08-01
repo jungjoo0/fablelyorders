@@ -1,11 +1,25 @@
 import os
 import json
-from flask import Flask, render_template, request
+from flask import Flask, render_template, request, redirect, url_for, session, flash
 import gspread
 from oauth2client.service_account import ServiceAccountCredentials
 from collections import defaultdict
+from functools import wraps
 
 app = Flask(__name__)
+app.secret_key = os.environ.get('FLASK_SECRET_KEY', 'your_very_secret_key_here') # Replace with a strong, random key in production
+
+# Simple password for demonstration
+CORRECT_PASSWORD = "1018"
+
+def login_required(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if not session.get('logged_in'):
+            flash('로그인이 필요합니다.', 'danger')
+            return redirect(url_for('login'))
+        return f(*args, **kwargs)
+    return decorated_function
 
 def get_sheet_data():
     try:
@@ -45,11 +59,29 @@ def get_sheet_data():
         return [{"error": f"An unexpected error occurred: {e}"}]
 
 @app.route('/')
-def index():
-    data = get_sheet_data()
-    return render_template('index.html', data=data)
+def root():
+    return redirect(url_for('login'))
+
+@app.route('/login', methods=['GET', 'POST'])
+def login():
+    if request.method == 'POST':
+        password = request.form['password']
+        if password == CORRECT_PASSWORD:
+            session['logged_in'] = True
+            flash('로그인 성공!', 'success')
+            return redirect(url_for('orders'))
+        else:
+            flash('비밀번호가 틀렸습니다.', 'danger')
+    return render_template('login.html')
+
+@app.route('/logout')
+def logout():
+    session.pop('logged_in', None)
+    flash('로그아웃 되었습니다.', 'info')
+    return redirect(url_for('login'))
 
 @app.route('/orders')
+@login_required
 def orders():
     data = get_sheet_data()
     if not data or (isinstance(data[0], dict) and data[0].get("error")):
