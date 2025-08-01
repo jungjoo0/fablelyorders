@@ -21,11 +21,49 @@
             padding: 20px;
             box-shadow: 2px 0 5px rgba(0,0,0,0.1);
             flex-shrink: 0;
-            transition: margin-left .3s ease-in-out; /* Smooth transition for sidebar */
+            transition: transform .3s ease-in-out; /* Smooth transition for sidebar */
         }
-        #sidebar.collapsed {
-            margin-left: -280px; /* Hide sidebar off-screen */
+        /* Default state for sidebar on larger screens */
+        @media (min-width: 768px) {
+            #sidebar {
+                transform: translateX(0); /* Always visible on larger screens */
+            }
         }
+        /* Mobile specific styles */
+        @media (max-width: 767.98px) { /* md breakpoint */
+            #sidebar {
+                position: fixed;
+                top: 0;
+                bottom: 0;
+                left: 0;
+                z-index: 1030; /* Above content */
+                transform: translateX(-100%); /* Hidden by default */
+            }
+            #sidebar.show {
+                transform: translateX(0); /* Show sidebar */
+            }
+            .overlay {
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background: rgba(0, 0, 0, 0.5);
+                z-index: 1029;
+                display: none;
+            }
+            .overlay.show {
+                display: block;
+            }
+            .navbar-toggler {
+                display: block; /* Show toggler on small screens */
+                position: fixed; /* Keep toggler visible */
+                top: 15px;
+                left: 15px;
+                z-index: 1040; /* Above sidebar and overlay */
+            }
+        }
+
         #sidebar h2 {
             color: #66b3ff;
             margin-bottom: 30px;
@@ -75,10 +113,6 @@
             flex-grow: 1;
             padding: 30px;
             overflow-y: auto;
-            transition: margin-left .3s ease-in-out; /* Smooth transition for content */
-        }
-        #content.expanded {
-            margin-left: 280px; /* Push content when sidebar is open */
         }
         .order-item {
             background-color: #fff;
@@ -123,49 +157,6 @@
         }
         .no-orders-message {
             color: #6c757d;
-        }
-
-        /* Mobile specific styles */
-        @media (max-width: 767.98px) { /* md breakpoint */
-            #sidebar {
-                position: fixed;
-                top: 0;
-                bottom: 0;
-                left: 0;
-                z-index: 1030; /* Above content */
-                margin-left: -280px; /* Hidden by default */
-            }
-            #sidebar.show {
-                margin-left: 0; /* Show sidebar */
-            }
-            #content {
-                margin-left: 0; /* No push on small screens */
-                width: 100%;
-            }
-            .navbar-toggler {
-                display: block; /* Show toggler on small screens */
-            }
-            .overlay {
-                position: fixed;
-                top: 0;
-                left: 0;
-                width: 100%;
-                height: 100%;
-                background: rgba(0, 0, 0, 0.5);
-                z-index: 1029;
-                display: none;
-            }
-            .overlay.show {
-                display: block;
-            }
-        }
-        @media (min-width: 768px) {
-            #sidebar {
-                margin-left: 0; /* Always visible on larger screens */
-            }
-            .navbar-toggler {
-                display: none; /* Hide toggler on larger screens */
-            }
         }
     </style>
 </head>
@@ -266,7 +257,7 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
     <script>
         function toggleSidebar() {
-            document.getElementById('sidebar').classList.toggle('collapsed');
+            document.getElementById('sidebar').classList.toggle('show');
             document.querySelector('.overlay').classList.toggle('show');
         }
 
@@ -279,7 +270,7 @@
 
             // Hide sidebar on small screens by default
             if (window.innerWidth < 768) {
-                document.getElementById('sidebar').classList.add('collapsed');
+                document.getElementById('sidebar').classList.remove('show'); // Ensure it's hidden initially
             }
         });
     </script>
