@@ -5,6 +5,7 @@ import gspread
 from oauth2client.service_account import ServiceAccountCredentials
 from collections import defaultdict
 from functools import wraps
+from datetime import datetime
 
 app = Flask(__name__)
 app.secret_key = os.environ.get('FLASK_SECRET_KEY', 'your_very_secret_key_here') # Replace with a strong, random key in production
@@ -88,13 +89,28 @@ def orders():
         return render_template('orders.html', orders_by_product={}, error=data[0].get("error") if data else "Unknown error")
 
     # Get unique delivery dates for the filter dropdown
-    delivery_dates = sorted(list(set(row.get('배송희망일') for row in data if row.get('배송희망일'))))
+    unique_dates = list(set(row.get('배송희망일') for row in data if row.get('배송희망일')))
+    
+    # Parse and sort dates properly
+    def parse_date(date_str):
+        try:
+            # "7월 31일" or "8월 7일" format to datetime object
+            month_day = date_str.replace('월', '').replace('일', '').split()
+            if len(month_day) == 2:
+                month, day = int(month_day[0]), int(month_day[1])
+                # Assume current year
+                year = datetime.now().year
+                return datetime(year, month, day)
+        except:
+            pass
+        return datetime.min  # fallback for invalid dates
+    
+    delivery_dates = sorted(unique_dates, key=parse_date)
 
     # Filter data based on selected date
     selected_date = request.args.get('delivery_date')
     if selected_date and selected_date != 'all':
-        main_order_ids = set(row['주문번호'] for row in data if row.get('배송희망일') == selected_date and row.get('상품종류') == '조합형옵션상품')
-        data = [row for row in data if row.get('주문번호') in main_order_ids]
+        data = [row for row in data if row.get('배송희망일') == selected_date]
 
     # 1. Group by product for tabs
     tabs = defaultdict(list)
